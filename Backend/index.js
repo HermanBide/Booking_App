@@ -1,41 +1,93 @@
-const express = require('express')
+const express = require("express");
 const cors = require("cors");
-const morgan = require("morgan")
-const mongoose = require( 'mongoose');
-const User = require('./models/user.js');
+const morgan = require("morgan");
+// const userRoutes= require("./routes/userRoute")
+const User = require("./models/user");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+require("./db");
+const cookieParser = require("cookie-parser");
 
-require('dotenv').config();
+const corsOptions = {
+  origin: "http://localhost:3000",
+  credentials: true, //access-control-allow-credentials:true
+  optionSuccessStatus: 200,
+};
 
-mongoose.connect(process.env.MONGODB_URI).then(() => {
-  console.log('Connection to mongodb was successful')
-})
-.catch(e => {
-  console.error('Error could not Connect to mongodb', e.message)
-})
+const bcryptSalt = bcrypt.genSaltSync(10);
+const jwtSecret = "BookingApp";
+const app = express();
 
-
-const PORT = process.env.PORT || 4000
-const app = express()
+app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(cors({
-    credentials: true,
-    origin: 'https://localhost:3000'
-}));
+app.use(cors(corsOptions));
 app.use(morgan("dev"));
+app.use(cookieParser());
 
-app.get('/', (req, res) => {
-    res.send("Hello there!");
-  });
+//ROUTES//
+// app.use("api/user", userRoutes);
+app.get("/", (req, res) => {
+  res.send("Hello there!");
+});
 
-  app.get('/test', (req, res) => {
-    res.json('test ok')
-  })
+app.post("/register", async (req, res) => {
+  try {
+    const { name, password, email } = req.body;
+    const userInfo = await User.create({
+      name,
+      email,
+      password: bcrypt.hashSync(password, bcryptSalt),
+    });
+    res.status(201).json(userInfo);
+  } catch (error) {
+    res.status(422).json("user not created ", error.message);
+  }
+});
 
-  app.post('/register', (req, res) => {
-    const { name, email, password } = req.body
-    res.json({ name, email, password })
-  })
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const userInfo = await User.findOne({
+      email,
+    });
+    if (userInfo) {
+      const passwordOk = bcrypt.compareSync(password, userInfo.password);
+      if (passwordOk) {
+        jwt.sign(
+          { email: userInfo.email, id: userInfo._id, name: userInfo.name },
+          jwtSecret,
+          {},
+          (err, token) => {
+            if (err) throw err;
+            res.cookie("token", token).json(userInfo);
+          }
+        );
+      } else {
+        res.status(422).json("password is not ok");
+      }
+    } else {
+      res.status(500).json("user not found");
+    }
+  } catch (error) {
+    res.status(422).json("user not created ", error.message);
+  }
+});
 
+app.get("/profile", (req, res) => {
+  const { token } = req.cookies;
+  if (token) {
+    jwt.verify(token, jwtSecret, {}, (err, userData) => {
+      if (err) throw err;
+      const { id, name, email } = User.findById(userData.id);
+      res.json({ id, name, email });
+    });
+  } else {
+    res.json(null);
+  }
+  res.json(userInfo);
+});
+
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  console.log(`Express server listening on port ${PORT}`)
+  console.log(`Express server listening on port ${PORT}`);
 });

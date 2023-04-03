@@ -1,5 +1,5 @@
-const { Schema, model } = require("mongoose");
-const userSchema = new Schema(
+const { Schema, model } = require ("mongoose")
+const bookingSchema = new Schema(
     {
         name: { type: String, required: true },
         email: { type: String, unique: true, required: true, validate: {validator: (newEmail) => /@/.test(newEmail), message: ()=> "This email is not valid" }, },
@@ -7,6 +7,4 @@ const userSchema = new Schema(
     },
     {timestamps: true}
 );
-
-
-module.exports = model("User", userSchema);
+module.exports = model("Booking", bookingSchema);
