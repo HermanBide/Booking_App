@@ -84,10 +84,14 @@ app.get("/profile", (req, res) => {
   } else {
     res.json(null);
   }
-  res.json(userInfo);
+  // res.json(userInfo);
 });
 
-const PORT = process.env.PORT || 4000;
+app.post("/logout", (req, res) => {
+  res.cookie("token", "").json(true);
+});
+
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Express server listening on port ${PORT}`);
 });
