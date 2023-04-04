@@ -3,6 +3,7 @@ const cors = require("cors");
 const morgan = require("morgan");
 // const userRoutes= require("./routes/userRoute")
 const User = require("./models/user");
+const Place = require("./models/place");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("./db");
@@ -30,6 +31,9 @@ app.get("/", (req, res) => {
   res.send("Hello there!");
 });
 
+//User.model Registration/Auth FUNCTIONS 
+//User.model Registration/Auth FUNCTIONS 
+
 app.post("/register", async (req, res) => {
   try {
     const { name, password, email } = req.body;
@@ -53,8 +57,9 @@ app.post("/login", async (req, res) => {
     if (userInfo) {
       const passwordOk = bcrypt.compareSync(password, userInfo.password);
       if (passwordOk) {
-        jwt.sign(
-          { email: userInfo.email, id: userInfo._id, name: userInfo.name },
+        jwt.sign({ 
+          email: userInfo.email, id: userInfo._id, name: userInfo.name 
+        },
           jwtSecret,
           {},
           (err, token) => {
@@ -76,22 +81,25 @@ app.post("/login", async (req, res) => {
 app.get("/profile", (req, res) => {
   const { token } = req.cookies;
   if (token) {
-    jwt.verify(token, jwtSecret, {}, (err, userData) => {
+    jwt.verify(token, jwtSecret, {}, async (err, userData) => {
       if (err) throw err;
-      const { id, name, email } = User.findById(userData.id);
-      res.json({ id, name, email });
+      const { name, email, _id } = User.findById(userData.id);
+      res.json({ _id, name, email });
     });
   } else {
     res.json(null);
   }
-  // res.json(userInfo);
 });
 
 app.post("/logout", (req, res) => {
   res.cookie("token", "").json(true);
 });
 
-const PORT = process.env.PORT || 5000;
+//PLACE.model Adding and display FUNCTIONS 
+//PLACE.model Adding and display FUNCTIONS 
+
+
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Express server listening on port ${PORT}`);
 });
